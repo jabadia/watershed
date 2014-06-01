@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=7, IE=9, IE=10">
+    <!--The viewport meta tag is used to improve the presentation and behavior of the samples 
+      on iOS devices-->
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Cálculo de Cuencas</title>
+
+    <link rel="stylesheet" href="http://js.arcgis.com/3.7/js/esri/css/esri.css">
+    <style>
+      html, body, #mapDiv {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+      }
+      #info, #loading {
+        bottom: 20px;
+        color: #444;
+        height: auto;
+        font-family: arial;
+        left: 20px;
+        margin: 5px;
+        padding: 10px;
+        position: absolute;
+        text-align: left;
+        width: 200px;
+        z-index: 40;
+      }
+    </style>
+
+    <script src="http://js.arcgis.com/3.7compact/"></script>
+    <script>
+          var map, gp;
+
+    require(["dojo/dom",
+              "dojo/_base/array",
+              "dojo/_base/Color",
+              
+              "esri/map",
+              "esri/graphic",
+              "esri/graphicsUtils",
+              "esri/tasks/Geoprocessor",
+              "esri/tasks/FeatureSet",
+              "esri/tasks/LinearUnit",
+              "esri/symbols/SimpleMarkerSymbol",
+              "esri/symbols/SimpleLineSymbol",
+              "esri/symbols/SimpleFillSymbol",
+              "esri/layers/ArcGISTiledMapServiceLayer"
+              ],
+        function(dom, array, Color, Map, Graphic, graphicsUtils, Geoprocessor, FeatureSet, LinearUnit, SimpleMarkerSymbol, SimpleLineSymbol, SimpleFillSymbol,ArcGISTiledMapServiceLayer){
+
+          /*Initialize map, GP*/
+            esri.hide(dojo.byId('loading'));
+
+            map = new Map("mapDiv", {
+              basemap: "oceans",
+              center: [-7.85, 43.38],
+              zoom: 9,
+              minZoom: 9,
+              maxZoom: 13
+            });
+
+            //map.addLayer(new ArcGISTiledMapServiceLayer("http://www.mapabase.es/ArcGIS/rest/services/Vector/Topografico_r_WGS84_WM_MB4/MapServer"));
+            map.addLayer(new ArcGISTiledMapServiceLayer("http://imagery.arcgisonline.com/arcgis/rest/services/LandsatGLS/LandsatShadedBasemap/ImageServer"));
+            map.addLayer(new ArcGISTiledMapServiceLayer("http://54.217.224.125/arcgis/rest/services/GP_Demo/mdt200/MapServer"));
+
+            gp = new Geoprocessor("http://54.217.224.125/arcgis/rest/services/GP_Demo/Watershed/GPServer/watershed");
+            gp.setOutputSpatialReference({
+              wkid: 102100
+            });
+            map.on("click", computeWaterShed);
+
+          function computeWaterShed(evt) {
+            map.graphics.clear();
+            var pointSymbol = new SimpleMarkerSymbol();
+            pointSymbol.setSize(14);
+            pointSymbol.setOutline(new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([255, 0, 0]), 1));
+            pointSymbol.setColor(new Color([0, 255, 0, 0.25]));
+
+            var graphic = new Graphic(evt.mapPoint, pointSymbol);
+            map.graphics.add(graphic);
+
+            var features = [];
+            features.push(graphic);
+            var featureSet = new FeatureSet();
+            featureSet.features = features;
+            
+            var params = {
+              "Pour_Point": featureSet
+            };
+            gp.execute(params, drawWatershed);
+            esri.hide(dojo.byId('info'));
+            esri.show(dojo.byId('loading'));
+          }
+
+          function drawWatershed(results, messages) {
+            var polySymbol = new SimpleFillSymbol();
+            polySymbol.setOutline(new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([0, 0, 255, 0.5]), 1));
+            polySymbol.setColor(new Color([0, 127, 255, 0.7]));
+            var features = results[1].value.features;
+            for (var f = 0, fl = features.length; f < fl; f++) {
+              var feature = features[f];
+              feature.setSymbol(polySymbol);
+              map.graphics.add(feature);
+            }
+            map.setExtent(graphicsUtils.graphicsExtent(map.graphics.graphics), true);
+            esri.show(dojo.byId('info'));
+            esri.hide(dojo.byId('loading'));
+          }
+    });
+    </script>
+
+  </head>
+  <body>
+    <div id="mapDiv"></div>
+    <div id="loading" class="esriSimpleSlider">
+      <img height="15px" src="loading.gif"/> Espere unos segundos
+    </div>
+    <div id="info" class="esriSimpleSlider">
+      Click en el mapa para ejecutar el cálculo de cuenca.
+    </div>
+  </body>
+</html>

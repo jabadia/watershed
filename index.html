@@ -122,6 +122,12 @@
 			map.setExtent(graphicsUtils.graphicsExtent(map.graphics.graphics), true);
 			esri.show(dojo.byId('info'));
 			esri.hide(dojo.byId('loading'));
+
+			messages.forEach(function(msg)
+			{
+				var shortType = msg.type.replace("esriJobMessageType","");
+				console.log("[" + shortType + "]:", msg.description);
+			})
 		}
 	});
 	</script>

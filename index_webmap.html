@@ -48,11 +48,12 @@
 		"esri/symbols/SimpleLineSymbol",
 		"esri/symbols/SimpleFillSymbol",
 		"esri/layers/ArcGISTiledMapServiceLayer",
-		"esri/arcgis/utils"
+		"esri/arcgis/utils",
+		"esri/geometry/webMercatorUtils"
 		],
 	function(dom, array, Color, 
 		Map, Graphic, graphicsUtils, Geoprocessor, FeatureSet, LinearUnit, 
-		SimpleMarkerSymbol, SimpleLineSymbol, SimpleFillSymbol,ArcGISTiledMapServiceLayer, arcgisUtils)
+		SimpleMarkerSymbol, SimpleLineSymbol, SimpleFillSymbol,ArcGISTiledMapServiceLayer, arcgisUtils, webMercatorUtils)
 	{
 		"use strict";
 
@@ -72,6 +73,7 @@
 		{
 			map = response.map;
 			map.on("click", computeWaterShed);
+			map.on("dbl-click", logCoordinates);
 		})
 
 		/* init gp */
@@ -81,6 +83,11 @@
 		});
 
 
+		function logCoordinates(evt)
+		{
+			var p = webMercatorUtils.webMercatorToGeographic(evt.mapPoint);
+			console.log(JSON.stringify(p.toJson()));
+		}
 
 		function drawPoint(mapPoint)
 		{
